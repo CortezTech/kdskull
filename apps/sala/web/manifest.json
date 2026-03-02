@@ -1,6 +1,6 @@
 {
-    "name": "sala",
-    "short_name": "sala",
+    "name": "kds_sala",
+    "short_name": "kds_sala",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

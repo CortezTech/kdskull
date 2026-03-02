@@ -1,0 +1,10 @@
+name: kds_shared
+description: Shared code for KDS monorepo (models, repositories).
+version: 0.0.1
+publish_to: "none"
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  cloud_firestore: ^5.0.0

@@ -1,4 +1,4 @@
-# sala
+# kds_sala
 
 A new Flutter project.
 
