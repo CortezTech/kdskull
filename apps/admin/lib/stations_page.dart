@@ -39,11 +39,8 @@ class StationsPage extends ConsumerWidget {
                     IconButton(
                       tooltip: 'Editar',
                       icon: const Icon(Icons.edit),
-                      onPressed: () => _openStationDialog(
-                        context,
-                        ref,
-                        station: s,
-                      ),
+                      onPressed: () =>
+                          _openStationDialog(context, ref, station: s),
                     ),
                     IconButton(
                       tooltip: 'Borrar',
@@ -131,7 +128,11 @@ class StationsPage extends ConsumerWidget {
               if (station == null) {
                 await repo.createStation(name: name, order: order);
               } else {
-                await repo.updateStation(id: station.id, name: name, order: order);
+                await repo.updateStation(
+                  id: station.id,
+                  name: name,
+                  order: order,
+                );
               }
 
               if (context.mounted) Navigator.pop(context);

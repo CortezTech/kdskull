@@ -4,6 +4,14 @@ import 'package:kds_shared/kds_shared.dart';
 
 import 'providers.dart';
 
+const kDishCategories = <String>[
+  'Entrantes',
+  'Principal',
+  'Postres',
+  'Bebidas',
+  'Otros',
+];
+
 class DishesPage extends ConsumerWidget {
   const DishesPage({super.key});
 
@@ -33,13 +41,13 @@ class DishesPage extends ConsumerWidget {
         error: (e, _) => Center(child: Text('Error estaciones: $e')),
         data: (stations) {
           if (stations.isEmpty) {
-            return const Center(child: Text('No hay estaciones. Crea una primero.'));
+            return const Center(
+              child: Text('No hay estaciones. Crea una primero.'),
+            );
           }
 
           // Mapa stationId -> name para mostrar en la lista
-          final stationNameById = {
-            for (final s in stations) s.id: s.name,
-          };
+          final stationNameById = {for (final s in stations) s.id: s.name};
 
           return dishesAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -50,7 +58,8 @@ class DishesPage extends ConsumerWidget {
               }
 
               // (Opcional) Ordenar por estación y nombre para una lista más limpia
-              final sorted = [...dishes]..sort((a, b) {
+              final sorted = [...dishes]
+                ..sort((a, b) {
                   final sa = stationNameById[a.stationId] ?? '';
                   final sb = stationNameById[b.stationId] ?? '';
                   final c1 = sa.compareTo(sb);
@@ -63,12 +72,15 @@ class DishesPage extends ConsumerWidget {
                 separatorBuilder: (_, __) => const Divider(height: 0),
                 itemBuilder: (context, i) {
                   final d = sorted[i];
-                  final stationName = stationNameById[d.stationId] ?? '(sin estación)';
+                  final stationName =
+                      stationNameById[d.stationId] ?? '(sin estación)';
                   final minutes = (d.stdPrepTimeSec / 60).round();
 
                   return ListTile(
                     title: Text(d.name),
-                    subtitle: Text('Estación: $stationName · Tiempo: ${minutes} min'),
+                    subtitle: Text(
+                      'Cat: ${d.category} · Estación: $stationName · Tiempo: $minutes min',
+                    ),
                     leading: Icon(
                       d.available ? Icons.check_circle : Icons.cancel,
                     ),
@@ -80,12 +92,15 @@ class DishesPage extends ConsumerWidget {
                         Switch(
                           value: d.available,
                           onChanged: (v) async {
-                            await ref.read(dishesRepositoryProvider).updateDish(
+                            await ref
+                                .read(dishesRepositoryProvider)
+                                .updateDish(
                                   id: d.id,
                                   name: d.name,
                                   stationId: d.stationId,
                                   stdPrepTimeSec: d.stdPrepTimeSec,
                                   available: v,
+                                  category: d.category,
                                 );
                           },
                         ),
@@ -105,7 +120,9 @@ class DishesPage extends ConsumerWidget {
                           onPressed: () async {
                             final ok = await _confirmDelete(context, d.name);
                             if (!ok) return;
-                            await ref.read(dishesRepositoryProvider).deleteDish(d.id);
+                            await ref
+                                .read(dishesRepositoryProvider)
+                                .deleteDish(d.id);
                           },
                         ),
                       ],
@@ -160,6 +177,10 @@ class DishesPage extends ConsumerWidget {
         ? dish!.stationId
         : stations.first.id;
 
+    var selectedCategory = (dish?.category.isNotEmpty == true)
+        ? dish!.category
+        : kDishCategories.first;
+
     var available = dish?.available ?? true;
 
     await showDialog<void>(
@@ -176,15 +197,29 @@ class DishesPage extends ConsumerWidget {
                   decoration: const InputDecoration(labelText: 'Nombre'),
                 ),
                 const SizedBox(height: 12),
+
+                DropdownButtonFormField<String>(
+                  value: selectedCategory,
+                  items: kDishCategories
+                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                      .toList(),
+                  onChanged: (v) => setState(
+                    () => selectedCategory = v ?? kDishCategories.first,
+                  ),
+                  decoration: const InputDecoration(labelText: 'Categoría'),
+                ),
+
                 DropdownButtonFormField<String>(
                   value: selectedStationId,
                   items: stations
-                      .map((s) => DropdownMenuItem(
-                            value: s.id,
-                            child: Text(s.name),
-                          ))
+                      .map(
+                        (s) =>
+                            DropdownMenuItem(value: s.id, child: Text(s.name)),
+                      )
                       .toList(),
-                  onChanged: (v) => setState(() => selectedStationId = v ?? stations.first.id),
+                  onChanged: (v) => setState(
+                    () => selectedStationId = v ?? stations.first.id,
+                  ),
                   decoration: const InputDecoration(labelText: 'Estación'),
                 ),
                 const SizedBox(height: 12),
@@ -226,6 +261,7 @@ class DishesPage extends ConsumerWidget {
                     stationId: selectedStationId,
                     stdPrepTimeSec: sec,
                     available: available,
+                    category: selectedCategory,
                   );
                 } else {
                   await repo.updateDish(
@@ -234,6 +270,7 @@ class DishesPage extends ConsumerWidget {
                     stationId: selectedStationId,
                     stdPrepTimeSec: sec,
                     available: available,
+                    category: selectedCategory,
                   );
                 }
 

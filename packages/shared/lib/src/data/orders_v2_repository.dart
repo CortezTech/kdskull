@@ -6,7 +6,8 @@ class OrdersV2Repository {
 
   final FirebaseFirestore _db;
 
-  CollectionReference<Map<String, dynamic>> get _orders => _db.collection('orders');
+  CollectionReference<Map<String, dynamic>> get _orders =>
+      _db.collection('orders');
 
   Future<String> createOrderWithItems({
     required String table,

@@ -12,38 +12,63 @@ class CartLine {
       CartLine(dish: dish, qty: qty ?? this.qty, notes: notes ?? this.notes);
 }
 
-class CartNotifier extends Notifier<List<CartLine>> {
+class CartByTableNotifier extends Notifier<Map<String, List<CartLine>>> {
   @override
-  List<CartLine> build() => [];
+  Map<String, List<CartLine>> build() => {};
 
-  void add(Dish dish) {
-    final i = state.indexWhere((l) => l.dish.id == dish.id);
+  List<CartLine> cartOf(String table) => state[table] ?? const [];
+
+  int totalItemsOf(String table) =>
+      cartOf(table).fold<int>(0, (acc, l) => acc + l.qty);
+
+  void add(String table, Dish dish) {
+    final cart = [...cartOf(table)];
+    final i = cart.indexWhere((l) => l.dish.id == dish.id);
+
     if (i == -1) {
-      state = [...state, CartLine(dish: dish, qty: 1)];
+      cart.add(CartLine(dish: dish, qty: 1));
     } else {
-      final line = state[i];
-      final updated = line.copyWith(qty: line.qty + 1);
-      final next = [...state]..[i] = updated;
-      state = next;
+      cart[i] = cart[i].copyWith(qty: cart[i].qty + 1);
     }
+    state = {...state, table: cart};
   }
 
-  void removeOne(Dish dish) {
-    final i = state.indexWhere((l) => l.dish.id == dish.id);
+  void removeOne(String table, Dish dish) {
+    final cart = [...cartOf(table)];
+    final i = cart.indexWhere((l) => l.dish.id == dish.id);
     if (i == -1) return;
-    final line = state[i];
+
+    final line = cart[i];
     if (line.qty <= 1) {
-      state = [...state]..removeAt(i);
+      cart.removeAt(i);
     } else {
-      final updated = line.copyWith(qty: line.qty - 1);
-      final next = [...state]..[i] = updated;
+      cart[i] = line.copyWith(qty: line.qty - 1);
+    }
+
+    if (cart.isEmpty) {
+      final next = {...state}..remove(table);
       state = next;
+    } else {
+      state = {...state, table: cart};
     }
   }
 
-  void clear() => state = [];
+  void setNotes(String table, String dishId, String notes) {
+    final cart = [...cartOf(table)];
+    final i = cart.indexWhere((l) => l.dish.id == dishId);
+    if (i == -1) return;
+
+    cart[i] = cart[i].copyWith(notes: notes);
+    state = {...state, table: cart};
+  }
+
+  void clearTable(String table) {
+    final next = {...state}..remove(table);
+    state = next;
+  }
 }
 
-final cartProvider = NotifierProvider<CartNotifier, List<CartLine>>(
-  CartNotifier.new,
-);
+final cartByTableProvider =
+    NotifierProvider<CartByTableNotifier, Map<String, List<CartLine>>>(
+      CartByTableNotifier.new,
+    );

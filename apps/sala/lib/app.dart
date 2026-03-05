@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kds_sala/table_select_page.dart';
 import 'home_page.dart';
 
 class SalaApp extends StatelessWidget {
@@ -13,7 +14,7 @@ class SalaApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const HomePage(),
+      home: const TableSelectPage(),
     );
   }
 }

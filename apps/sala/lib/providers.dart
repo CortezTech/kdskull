@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kds_shared/kds_shared.dart';
-import 'package:kds_shared/kds_shared.dart';
 
 final firestoreProvider = Provider<FirebaseFirestore>((ref) {
   return FirebaseFirestore.instance;
@@ -26,3 +25,5 @@ final availableDishesProvider = StreamProvider<List<Dish>>((ref) {
 final ordersV2RepositoryProvider = Provider<OrdersV2Repository>((ref) {
   return OrdersV2Repository(ref.watch(firestoreProvider));
 });
+
+final selectedTableProvider = StateProvider<String?>((ref) => null);

@@ -10,7 +10,8 @@ class DishesRepository {
       _db.collection('dishes');
 
   Stream<List<Dish>> watchAllDishes() {
-    return _dishes.snapshots()
+    return _dishes
+        .snapshots()
         .map((snap) => snap.docs.map(Dish.fromDoc).toList());
   }
 
@@ -26,12 +27,16 @@ class DishesRepository {
     required String stationId,
     required int stdPrepTimeSec,
     required bool available,
+    required String category,
   }) async {
+    final cat = category.trim().isEmpty ? 'Sin categoría' : category.trim();
+
     await _dishes.add({
       'name': name.trim(),
       'stationId': stationId,
       'stdPrepTimeSec': stdPrepTimeSec,
       'available': available,
+      'category': cat,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
@@ -42,12 +47,16 @@ class DishesRepository {
     required String stationId,
     required int stdPrepTimeSec,
     required bool available,
+    required String category,
   }) async {
+    final cat = category.trim().isEmpty ? 'Sin categoría' : category.trim();
+
     await _dishes.doc(id).update({
       'name': name.trim(),
       'stationId': stationId,
       'stdPrepTimeSec': stdPrepTimeSec,
       'available': available,
+      'category': cat,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }

@@ -24,5 +24,7 @@ final kitchenRepositoryProvider = Provider<KitchenRepository>((ref) {
 final stationQueueProvider = StreamProvider<List<OrderItem>>((ref) {
   final stationId = ref.watch(selectedStationIdProvider);
   if (stationId == null) return const Stream.empty();
-  return ref.watch(kitchenRepositoryProvider).watchStationQueue(stationId: stationId);
+  return ref
+      .watch(kitchenRepositoryProvider)
+      .watchStationQueue(stationId: stationId);
 });

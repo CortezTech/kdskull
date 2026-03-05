@@ -6,6 +6,7 @@ class Dish {
   final String stationId;
   final int stdPrepTimeSec;
   final bool available;
+  final String category;
 
   const Dish({
     required this.id,
@@ -13,6 +14,7 @@ class Dish {
     required this.stationId,
     required this.stdPrepTimeSec,
     required this.available,
+    required this.category,
   });
 
   factory Dish.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -23,6 +25,9 @@ class Dish {
       stationId: (data['stationId'] as String?) ?? '',
       stdPrepTimeSec: (data['stdPrepTimeSec'] as int?) ?? 0,
       available: (data['available'] as bool?) ?? true,
+      category: ((data['category'] as String?)?.trim().isNotEmpty == true)
+          ? (data['category'] as String).trim()
+          : 'Sin categoría',
     );
   }
 }

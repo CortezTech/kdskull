@@ -25,13 +25,13 @@ class HomePage extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             FilledButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const DishesPage()),
-              );
-            },
-            child: const Text('Gestionar platos'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DishesPage()),
+                );
+              },
+              child: const Text('Gestionar platos'),
             ),
           ],
         ),

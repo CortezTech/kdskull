@@ -53,12 +53,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                   child: DropdownButton<String>(
                     value: current,
                     items: stations
-                        .map((s) => DropdownMenuItem(
-                              value: s.id,
-                              child: Text(s.name),
-                            ))
+                        .map(
+                          (s) => DropdownMenuItem(
+                            value: s.id,
+                            child: Text(s.name),
+                          ),
+                        )
                         .toList(),
-                    onChanged: (v) => ref.read(selectedStationIdProvider.notifier).state = v,
+                    onChanged: (v) =>
+                        ref.read(selectedStationIdProvider.notifier).state = v,
                   ),
                 ),
               );
@@ -71,13 +74,16 @@ class _HomePageState extends ConsumerState<HomePage> {
         error: (e, _) => Center(child: Text('Error estaciones: $e')),
         data: (stations) {
           if (stations.isEmpty) {
-            return const Center(child: Text('No hay estaciones (crea en Admin)'));
+            return const Center(
+              child: Text('No hay estaciones (crea en Admin)'),
+            );
           }
 
           // set default station al arrancar
           if (selectedStationId == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              ref.read(selectedStationIdProvider.notifier).state = stations.first.id;
+              ref.read(selectedStationIdProvider.notifier).state =
+                  stations.first.id;
             });
             return const Center(child: CircularProgressIndicator());
           }
@@ -89,7 +95,9 @@ class _HomePageState extends ConsumerState<HomePage> {
             error: (e, _) => Center(child: Text('Error cola: $e')),
             data: (items) {
               final todo = items.where((i) => i.status == 'todo').toList();
-              final doing = items.where((i) => i.status == 'in_progress').toList();
+              final doing = items
+                  .where((i) => i.status == 'in_progress')
+                  .toList();
               final ready = items.where((i) => i.status == 'ready').toList();
 
               return LayoutBuilder(
@@ -112,11 +120,17 @@ class _HomePageState extends ConsumerState<HomePage> {
                     padding: const EdgeInsets.all(12),
                     child: Row(
                       children: [
-                        Expanded(child: _Column(title: 'TODO', items: todo)),
+                        Expanded(
+                          child: _Column(title: 'TODO', items: todo),
+                        ),
                         const SizedBox(width: 12),
-                        Expanded(child: _Column(title: 'IN PROGRESS', items: doing)),
+                        Expanded(
+                          child: _Column(title: 'IN PROGRESS', items: doing),
+                        ),
                         const SizedBox(width: 12),
-                        Expanded(child: _Column(title: 'READY', items: ready)),
+                        Expanded(
+                          child: _Column(title: 'READY', items: ready),
+                        ),
                       ],
                     ),
                   );
@@ -155,7 +169,10 @@ class _Column extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 10),
-          Text('$title (${items.length})', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            '$title (${items.length})',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 10),
           const Divider(height: 1),
           Expanded(
@@ -191,15 +208,17 @@ class _ItemCard extends ConsumerWidget {
 
     if (start != null) {
       if (item.status == 'ready' && item.readyAt != null) {
-       // congelado
-      elapsed = item.readyAt!.difference(start);
+        // congelado
+        elapsed = item.readyAt!.difference(start);
       } else {
         // sigue contando
         elapsed = DateTime.now().difference(start);
       }
     }
 
-    final std = Duration(seconds: item.stdPrepTimeSec <= 0 ? 1 : item.stdPrepTimeSec);
+    final std = Duration(
+      seconds: item.stdPrepTimeSec <= 0 ? 1 : item.stdPrepTimeSec,
+    );
 
     // Color “lógico”: no lo especifico con colores concretos, solo texto.
     final slaText = elapsed == null
@@ -227,7 +246,10 @@ class _ItemCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Mesa ${item.table}', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Mesa ${item.table}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 4),
             Text(item.dishName),
             const SizedBox(height: 6),
