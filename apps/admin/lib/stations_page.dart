@@ -105,6 +105,7 @@ class StationsPage extends ConsumerWidget {
               controller: nameCtrl,
               decoration: const InputDecoration(labelText: 'Nombre'),
             ),
+            const SizedBox(height: 12),
             TextField(
               controller: orderCtrl,
               keyboardType: TextInputType.number,
