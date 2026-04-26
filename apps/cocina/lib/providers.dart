@@ -28,3 +28,12 @@ final stationQueueProvider = StreamProvider<List<OrderItem>>((ref) {
       .watch(kitchenRepositoryProvider)
       .watchStationQueue(stationId: stationId);
 });
+
+final nowTickerProvider = StreamProvider<DateTime>((ref) async* {
+  // Tick global para refrescar solo los widgets que muestran tiempo.
+  yield DateTime.now();
+  yield* Stream<DateTime>.periodic(
+    const Duration(seconds: 1),
+    (_) => DateTime.now(),
+  );
+});

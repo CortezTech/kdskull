@@ -1,38 +1,14 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kds_shared/kds_shared.dart';
 
 import 'providers.dart';
 
-class HomePage extends ConsumerStatefulWidget {
+class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
-  ConsumerState<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends ConsumerState<HomePage> {
-  Timer? _ticker;
-
-  @override
-  void initState() {
-    super.initState();
-    // Para que el “tiempo transcurrido” se refresque sin depender de Firestore
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final stationsAsync = ref.watch(stationsProvider);
     final selectedStationId = ref.watch(selectedStationIdProvider);
 
@@ -42,7 +18,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         actions: [
           stationsAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (stations) {
               if (stations.isEmpty) return const SizedBox.shrink();
               final current = selectedStationId ?? stations.first.id;
@@ -79,7 +55,6 @@ class _HomePageState extends ConsumerState<HomePage> {
             );
           }
 
-          // set default station al arrancar
           if (selectedStationId == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               ref.read(selectedStationIdProvider.notifier).state =
@@ -104,18 +79,16 @@ class _HomePageState extends ConsumerState<HomePage> {
                 builder: (context, constraints) {
                   final wide = constraints.maxWidth >= 900;
                   if (!wide) {
-                    // Lista simple en pantallas estrechas
-                    final all = [...todo, ...doing, ...ready];
-                    all.sort(_sortByCreated);
+                    final all = [...todo, ...doing, ...ready]
+                      ..sort(_sortByCreated);
                     return ListView.separated(
                       padding: const EdgeInsets.all(12),
                       itemCount: all.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (_, i) => _ItemCard(item: all[i]),
                     );
                   }
 
-                  // Kanban
                   return Padding(
                     padding: const EdgeInsets.all(12),
                     child: Row(
@@ -142,12 +115,12 @@ class _HomePageState extends ConsumerState<HomePage> {
       ),
     );
   }
+}
 
-  int _sortByCreated(OrderItem a, OrderItem b) {
-    final da = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-    final db = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-    return da.compareTo(db);
-  }
+int _sortByCreated(OrderItem a, OrderItem b) {
+  final da = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+  final db = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+  return da.compareTo(db);
 }
 
 class _Column extends StatelessWidget {
@@ -158,12 +131,7 @@ class _Column extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sorted = [...items];
-    sorted.sort((a, b) {
-      final da = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final db = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      return da.compareTo(db);
-    });
+    final sorted = [...items]..sort(_sortByCreated);
 
     return Card(
       child: Column(
@@ -181,7 +149,7 @@ class _Column extends StatelessWidget {
                 : ListView.separated(
                     padding: const EdgeInsets.all(12),
                     itemCount: sorted.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (_, i) => _ItemCard(item: sorted[i]),
                   ),
           ),
@@ -199,20 +167,16 @@ class _ItemCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final repo = ref.read(kitchenRepositoryProvider);
+    final now = ref.watch(nowTickerProvider).valueOrNull ?? DateTime.now();
 
-    // SLA: tiempo transcurrido desde startedAt (si está en progreso),
-    // si no, desde createdAt (aprox. para TODO)
-    final DateTime? start = item.startedAt ?? item.createdAt;
-
+    final start = item.startedAt ?? item.createdAt;
     Duration? elapsed;
 
     if (start != null) {
       if (item.status == 'ready' && item.readyAt != null) {
-        // congelado
         elapsed = item.readyAt!.difference(start);
       } else {
-        // sigue contando
-        elapsed = DateTime.now().difference(start);
+        elapsed = now.difference(start);
       }
     }
 
@@ -220,12 +184,10 @@ class _ItemCard extends ConsumerWidget {
       seconds: item.stdPrepTimeSec <= 0 ? 1 : item.stdPrepTimeSec,
     );
 
-    // Color “lógico”: no lo especifico con colores concretos, solo texto.
     final slaText = elapsed == null
-        ? '—'
-        : '${elapsed.inMinutes}m ${elapsed.inSeconds % 60}s / ${(std.inMinutes)}m';
-
-    final bool late = elapsed != null && elapsed > std;
+        ? '-'
+        : '${elapsed.inMinutes}m ${elapsed.inSeconds % 60}s / ${std.inMinutes}m';
+    final late = elapsed != null && elapsed > std;
 
     String? next;
     String? label;
@@ -235,9 +197,6 @@ class _ItemCard extends ConsumerWidget {
     } else if (item.status == 'in_progress') {
       next = 'ready';
       label = 'Listo';
-    } else {
-      next = null;
-      label = null;
     }
 
     return Card(
@@ -264,21 +223,29 @@ class _ItemCard extends ConsumerWidget {
             else
               Text('Tiempo: $slaText${late ? '  (RETRASO)' : ''}'),
             const SizedBox(height: 10),
-            Row(
-              children: [
-                if (label != null)
-                  FilledButton(
-                    onPressed: () async {
-                      await repo.setItemStatus(
-                        orderId: item.orderId,
-                        itemId: item.id,
-                        status: next!,
+            if (label != null)
+              FilledButton(
+                onPressed: () async {
+                  try {
+                    await repo.setItemStatus(
+                      orderId: item.orderId,
+                      itemId: item.id,
+                      status: next!,
+                    );
+                  } catch (_) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'No se pudo actualizar el estado. Intenta de nuevo.',
+                          ),
+                        ),
                       );
-                    },
-                    child: Text(label!),
-                  ),
-              ],
-            ),
+                    }
+                  }
+                },
+                child: Text(label),
+              ),
           ],
         ),
       ),
