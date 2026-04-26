@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:kds_sala/table_select_page.dart';
-import 'home_page.dart';
-
 class SalaApp extends StatelessWidget {
   const SalaApp({super.key});
 
