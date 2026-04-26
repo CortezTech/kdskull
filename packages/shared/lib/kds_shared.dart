@@ -8,6 +8,7 @@ export 'src/models/station.dart';
 export 'src/data/stations_repository.dart';
 
 export 'src/models/dish.dart';
+export 'src/constants/dish_categories.dart';
 export 'src/data/dishes_repository.dart';
 
 export 'src/models/order_header.dart';

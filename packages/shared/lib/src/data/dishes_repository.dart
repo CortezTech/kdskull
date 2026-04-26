@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../constants/dish_categories.dart';
 import '../models/dish.dart';
 
 class DishesRepository {
@@ -29,7 +31,8 @@ class DishesRepository {
     required bool available,
     required String category,
   }) async {
-    final cat = category.trim().isEmpty ? 'Sin categoría' : category.trim();
+    final cat =
+        category.trim().isEmpty ? kUncategorizedDishCategory : category.trim();
 
     await _dishes.add({
       'name': name.trim(),
@@ -49,7 +52,8 @@ class DishesRepository {
     required bool available,
     required String category,
   }) async {
-    final cat = category.trim().isEmpty ? 'Sin categoría' : category.trim();
+    final cat =
+        category.trim().isEmpty ? kUncategorizedDishCategory : category.trim();
 
     await _dishes.doc(id).update({
       'name': name.trim(),

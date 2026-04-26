@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../constants/dish_categories.dart';
+
 class Dish {
   final String id;
   final String name;
@@ -27,7 +29,7 @@ class Dish {
       available: (data['available'] as bool?) ?? true,
       category: ((data['category'] as String?)?.trim().isNotEmpty == true)
           ? (data['category'] as String).trim()
-          : 'Sin categoría',
+          : kUncategorizedDishCategory,
     );
   }
 }
