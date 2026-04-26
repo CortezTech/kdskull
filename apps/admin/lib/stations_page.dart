@@ -27,7 +27,7 @@ class StationsPage extends ConsumerWidget {
           }
           return ListView.separated(
             itemCount: stations.length,
-            separatorBuilder: (_, __) => const Divider(height: 0),
+            separatorBuilder: (_, _) => const Divider(height: 0),
             itemBuilder: (context, i) {
               final s = stations[i];
               return ListTile(

@@ -250,7 +250,7 @@ class DishesPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: selectedCategory,
+                  initialValue: selectedCategory,
                   items: categoryOptions
                       .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                       .toList(),
@@ -261,7 +261,7 @@ class DishesPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: selectedStationId,
+                  initialValue: selectedStationId,
                   items: stations
                       .map(
                         (s) =>

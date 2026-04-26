@@ -639,7 +639,7 @@ class _CartSheet extends ConsumerWidget {
                     : ListView.separated(
                         controller: scrollController,
                         itemCount: cart.length,
-                        separatorBuilder: (_, __) => const Divider(height: 0),
+                        separatorBuilder: (_, _) => const Divider(height: 0),
                         itemBuilder: (context, i) {
                           final line = cart[i];
                           return ListTile(
