@@ -6,9 +6,16 @@ import 'horizontal_board_scroll.dart';
 import 'kitchen_column.dart';
 
 class KitchenBoard extends StatelessWidget {
-  const KitchenBoard({super.key, required this.items});
+  const KitchenBoard({
+    super.key,
+    required this.items,
+    required this.allActiveItems,
+    required this.stationNamesById,
+  });
 
   final List<OrderItem> items;
+  final List<OrderItem> allActiveItems;
+  final Map<String, String> stationNamesById;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +54,8 @@ class KitchenBoard extends StatelessWidget {
                       child: KitchenColumn(
                         title: columnsWithItems[i].title,
                         items: columnsWithItems[i].items,
+                        allActiveItems: allActiveItems,
+                        stationNamesById: stationNamesById,
                       ),
                     ),
                     if (i < columnsWithItems.length - 1)

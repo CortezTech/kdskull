@@ -29,6 +29,10 @@ final stationQueueProvider = StreamProvider<List<OrderItem>>((ref) {
       .watchStationQueue(stationId: stationId);
 });
 
+final activeKitchenQueueProvider = StreamProvider<List<OrderItem>>(
+  (ref) => ref.watch(kitchenRepositoryProvider).watchActiveQueue(),
+);
+
 final nowTickerProvider = StreamProvider<DateTime>((_) async* {
   yield DateTime.now();
   yield* Stream<DateTime>.periodic(

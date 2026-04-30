@@ -40,6 +40,10 @@ class HomePage extends ConsumerWidget {
             );
           }
 
+          final stationNamesById = <String, String>{
+            for (final station in stations) station.id: station.name,
+          };
+
           if (selectedStationId == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               ref.read(selectedStationIdProvider.notifier).state =
@@ -49,10 +53,19 @@ class HomePage extends ConsumerWidget {
           }
 
           final queueAsync = ref.watch(stationQueueProvider);
+          final activeQueueAsync = ref.watch(activeKitchenQueueProvider);
           return queueAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(child: Text('Error cola: $e')),
-            data: (items) => KitchenBoard(items: items),
+            data: (items) => activeQueueAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Error cola global: $e')),
+              data: (allActiveItems) => KitchenBoard(
+                items: items,
+                allActiveItems: allActiveItems,
+                stationNamesById: stationNamesById,
+              ),
+            ),
           );
         },
       ),

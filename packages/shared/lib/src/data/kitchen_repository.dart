@@ -19,6 +19,21 @@ class KitchenRepository {
         .map((snap) => snap.docs.map(OrderItem.fromDoc).toList());
   }
 
+  /// Lee todos los items activos, sin filtrar por estación.
+  Stream<List<OrderItem>> watchActiveQueue({
+    List<String> statuses = const ['todo', 'in_progress', 'ready'],
+  }) {
+    return _db
+        .collectionGroup('items')
+        .snapshots()
+        .map(
+          (snap) => snap.docs
+              .map(OrderItem.fromDoc)
+              .where((item) => statuses.contains(item.status))
+              .toList(),
+        );
+  }
+
   /// Cambia estado y setea timestamps coherentes.
   Future<void> setItemStatus({
     required String orderId,

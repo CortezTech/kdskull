@@ -8,14 +8,22 @@ class KitchenTableSection extends StatelessWidget {
     super.key,
     required this.tableLabel,
     required this.items,
+    required this.totalDishCount,
+    required this.stationCount,
+    required this.otherDishCount,
+    required this.otherStationsLabel,
   });
 
   final String tableLabel;
   final List<OrderItem> items;
+  final int totalDishCount;
+  final int stationCount;
+  final int otherDishCount;
+  final String otherStationsLabel;
 
   @override
   Widget build(BuildContext context) {
-    final dishCount = items.length;
+    final isMultiStation = stationCount > 1 && otherDishCount > 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,7 +51,7 @@ class KitchenTableSection extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  '$dishCount plato${dishCount == 1 ? '' : 's'}',
+                  '$totalDishCount plato${totalDishCount == 1 ? '' : 's'}',
                   style: const TextStyle(
                     color: Color(0xFF0E6BA8),
                     fontWeight: FontWeight.w700,
@@ -51,6 +59,27 @@ class KitchenTableSection extends StatelessWidget {
                   ),
                 ),
               ),
+              if (isMultiStation) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A2233).withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '$otherDishCount de $otherStationsLabel',
+                    style: const TextStyle(
+                      color: Color(0xFF1A2233),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

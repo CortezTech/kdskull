@@ -5,10 +5,18 @@ import 'kitchen_styles.dart';
 import 'kitchen_table_section.dart';
 
 class KitchenColumn extends StatelessWidget {
-  const KitchenColumn({super.key, required this.title, required this.items});
+  const KitchenColumn({
+    super.key,
+    required this.title,
+    required this.items,
+    required this.allActiveItems,
+    required this.stationNamesById,
+  });
 
   final String title;
   final List<OrderItem> items;
+  final List<OrderItem> allActiveItems;
+  final Map<String, String> stationNamesById;
 
   @override
   Widget build(BuildContext context) {
@@ -83,9 +91,40 @@ class KitchenColumn extends StatelessWidget {
                     separatorBuilder: (_, _) => const SizedBox(height: 16),
                     itemBuilder: (_, i) {
                       final entry = groupedByTable.entries.elementAt(i);
+                      final tableItems = allActiveItems
+                          .where((item) => item.table == entry.key)
+                          .toList(growable: false);
+                      final totalDishCount = tableItems.fold<int>(
+                        0,
+                        (sum, item) => sum + item.qty,
+                      );
+                      final stationCount = tableItems
+                          .map((item) => item.stationId)
+                          .toSet()
+                          .length;
+                      final currentStationId = entry.value.first.stationId;
+                      final otherStationCounts = <String, int>{};
+                      for (final item in tableItems) {
+                        if (item.stationId == currentStationId) continue;
+                        otherStationCounts[item.stationId] =
+                            (otherStationCounts[item.stationId] ?? 0) + item.qty;
+                      }
+                      final otherDishCount = otherStationCounts.values.fold<int>(
+                        0,
+                        (sum, count) => sum + count,
+                      );
+                      final otherStationsLabel = otherStationCounts.keys
+                          .map((id) => stationNamesById[id] ?? id)
+                          .toList(growable: false)
+                          .join(' + ');
+
                       return KitchenTableSection(
                         tableLabel: entry.key,
                         items: entry.value,
+                        totalDishCount: totalDishCount,
+                        stationCount: stationCount,
+                        otherDishCount: otherDishCount,
+                        otherStationsLabel: otherStationsLabel,
                       );
                     },
                   ),
