@@ -173,11 +173,13 @@ class _DishTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final stationName =
         stationNameById[dish.stationId] ?? '(sin estaci\u00F3n)';
-    final minutes = (dish.stdPrepTimeSec / 60).round();
+    final timeText = dish.stdPrepTimeSec < 60
+        ? '${dish.stdPrepTimeSec} s'
+        : '${(dish.stdPrepTimeSec / 60).round()} min';
 
     return ListTile(
       title: Text(dish.name),
-      subtitle: Text('Estaci\u00F3n: $stationName \u00B7 Tiempo: $minutes min'),
+      subtitle: Text('Estaci\u00F3n: $stationName \u00B7 Tiempo: $timeText'),
       leading: Icon(dish.available ? Icons.check_circle : Icons.cancel),
       trailing: Wrap(
         spacing: 8,

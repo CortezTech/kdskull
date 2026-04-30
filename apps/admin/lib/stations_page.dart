@@ -27,14 +27,43 @@ class StationsPage extends ConsumerWidget {
           if (stations.isEmpty) {
             return const Center(child: Text('No hay estaciones'));
           }
-          return ListView.separated(
-            itemCount: stations.length,
-            separatorBuilder: (_, _) => const Divider(height: 0),
-            itemBuilder: (context, i) => _StationTile(
-              station: stations[i],
-              onEdit: (station) =>
-                  _handleUpsert(context, ref, station: station),
-            ),
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 90),
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 8,
+                        ),
+                        child: Text(
+                          'Estaciones (${stations.length})',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      for (int i = 0; i < stations.length; i++) ...[
+                        _StationTile(
+                          station: stations[i],
+                          onEdit: (station) =>
+                              _handleUpsert(context, ref, station: station),
+                        ),
+                        if (i < stations.length - 1) const Divider(height: 0),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -74,10 +103,12 @@ class _StationTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ListTile(
+      leading: const Icon(Icons.kitchen_rounded),
       title: Text(station.name),
       subtitle: Text('Orden: ${station.order}'),
       trailing: Wrap(
         spacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           IconButton(
             tooltip: 'Editar',

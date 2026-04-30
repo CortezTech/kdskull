@@ -23,10 +23,21 @@ Future<DishFormValues?> showDishFormDialog({
   Dish? initialDish,
 }) async {
   final nameCtrl = TextEditingController(text: initialDish?.name ?? '');
-  final initMinutes = initialDish == null
-      ? 10
-      : (initialDish.stdPrepTimeSec / 60).round().clamp(1, 999);
-  final minutesCtrl = TextEditingController(text: initMinutes.toString());
+  String formatMinutesFromSeconds(int sec) {
+    final minutes = sec / 60;
+    if (minutes == minutes.roundToDouble()) {
+      return minutes.toInt().toString();
+    }
+    return minutes.toStringAsFixed(2).replaceAll(RegExp(r'0+$'), '').replaceAll(
+      RegExp(r'\.$'),
+      '',
+    );
+  }
+
+  final initMinutesText = initialDish == null
+      ? '10'
+      : formatMinutesFromSeconds(initialDish.stdPrepTimeSec.clamp(1, 99999));
+  final minutesCtrl = TextEditingController(text: initMinutesText);
 
   var selectedStationId = initialDish?.stationId.isNotEmpty == true
       ? initialDish!.stationId
@@ -77,10 +88,13 @@ Future<DishFormValues?> showDishFormDialog({
               const SizedBox(height: 12),
               TextField(
                 controller: minutesCtrl,
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: const InputDecoration(
                   labelText: 'Tiempo est\u00E1ndar (minutos)',
-                  helperText: 'Se guarda en segundos en Firestore',
+                  helperText:
+                      'Acepta decimales (0.5 o 0,5 = 30s; 2 = 2 min)',
                 ),
               ),
               const SizedBox(height: 12),
@@ -105,15 +119,18 @@ Future<DishFormValues?> showDishFormDialog({
               final name = nameCtrl.text.trim();
               if (name.isEmpty) return;
 
-              final minutes = int.tryParse(minutesCtrl.text.trim()) ?? 0;
-              final sec = minutes <= 0 ? 60 : minutes * 60;
+              final rawMinutes = minutesCtrl.text.trim().replaceAll(',', '.');
+              final minutes = double.tryParse(rawMinutes) ?? 0;
+              final normalizedSec = minutes <= 0
+                  ? 1
+                  : (minutes * 60).round().clamp(1, 99999);
 
               Navigator.pop(
                 context,
                 DishFormValues(
                   name: name,
                   stationId: selectedStationId,
-                  stdPrepTimeSec: sec,
+                  stdPrepTimeSec: normalizedSec,
                   available: available,
                   category: selectedCategory,
                 ),
@@ -140,3 +157,4 @@ List<String> _categoryOptions(String selectedCategory) {
       normalizedSelected,
   ];
 }
+
