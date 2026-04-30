@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import 'home_page.dart';
+import 'theme.dart';
 
 class CocinaApp extends StatelessWidget {
   const CocinaApp({super.key});
@@ -9,10 +11,7 @@ class CocinaApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'KDS - Cocina',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
-        useMaterial3: true,
-      ),
+      theme: buildCocinaTheme(),
       home: const HomePage(),
     );
   }

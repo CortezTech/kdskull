@@ -2,35 +2,34 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kds_shared/kds_shared.dart';
 
-final firestoreProvider = Provider<FirebaseFirestore>((ref) {
-  return FirebaseFirestore.instance;
-});
+final firestoreProvider = Provider<FirebaseFirestore>(
+  (_) => FirebaseFirestore.instance,
+);
 
-final stationsRepositoryProvider = Provider<StationsRepository>((ref) {
-  return StationsRepository(ref.watch(firestoreProvider));
-});
+final stationsRepositoryProvider = Provider<StationsRepository>(
+  (ref) => StationsRepository(ref.watch(firestoreProvider)),
+);
 
-final stationsProvider = StreamProvider<List<Station>>((ref) {
-  return ref.watch(stationsRepositoryProvider).watchStations();
-});
+final kitchenRepositoryProvider = Provider<KitchenRepository>(
+  (ref) => KitchenRepository(ref.watch(firestoreProvider)),
+);
 
-// estación seleccionada (por defecto null hasta elegir)
-final selectedStationIdProvider = StateProvider<String?>((ref) => null);
+final stationsProvider = StreamProvider<List<Station>>(
+  (ref) => ref.watch(stationsRepositoryProvider).watchStations(),
+);
 
-final kitchenRepositoryProvider = Provider<KitchenRepository>((ref) {
-  return KitchenRepository(ref.watch(firestoreProvider));
-});
+// Estacion seleccionada (por defecto null hasta elegir).
+final selectedStationIdProvider = StateProvider<String?>((_) => null);
 
 final stationQueueProvider = StreamProvider<List<OrderItem>>((ref) {
   final stationId = ref.watch(selectedStationIdProvider);
-  if (stationId == null) return const Stream.empty();
+  if (stationId == null) return const Stream<List<OrderItem>>.empty();
   return ref
       .watch(kitchenRepositoryProvider)
       .watchStationQueue(stationId: stationId);
 });
 
-final nowTickerProvider = StreamProvider<DateTime>((ref) async* {
-  // Tick global para refrescar solo los widgets que muestran tiempo.
+final nowTickerProvider = StreamProvider<DateTime>((_) async* {
   yield DateTime.now();
   yield* Stream<DateTime>.periodic(
     const Duration(seconds: 1),
