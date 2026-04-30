@@ -4,6 +4,7 @@ import 'package:kds_shared/kds_shared.dart';
 
 import 'providers.dart';
 import 'home_page.dart';
+import 'widgets/table_select_card.dart';
 
 class TableSelectPage extends ConsumerWidget {
   const TableSelectPage({super.key});
@@ -75,7 +76,7 @@ class TableSelectPage extends ConsumerWidget {
                           final t = tables[i];
                           final session = sessions[t];
                           final progress = progressByTable[t];
-                          return _TableCard(
+                          return TableSelectCard(
                             tableNumber: t,
                             isOpen: session?.isOpen ?? false,
                             readyQty: progress?.readyQty ?? (session?.doneOrders ?? 0),
@@ -97,137 +98,6 @@ class TableSelectPage extends ConsumerWidget {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TableCard extends StatelessWidget {
-  const _TableCard({
-    required this.tableNumber,
-    required this.isOpen,
-    required this.readyQty,
-    required this.totalQty,
-    required this.onTap,
-  });
-
-  final String tableNumber;
-  final bool isOpen;
-  final int readyQty;
-  final int totalQty;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasProgress = totalQty > 0;
-    final allReady = hasProgress && readyQty >= totalQty;
-    final noneReady = hasProgress && readyQty == 0;
-    final readyChipColor = allReady
-        ? const Color(0xFF2E7D32)
-        : noneReady
-        ? const Color(0xFFB3261E)
-        : const Color(0xFFD97706);
-
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0E6BA8).withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.table_restaurant_rounded,
-                      color: Color(0xFF0E6BA8),
-                    ),
-                  ),
-                  const Spacer(),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      if (isOpen)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2E7D32).withValues(
-                              alpha: 0.14,
-                            ),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: const Text(
-                            'Abierta',
-                            style: TextStyle(
-                              color: Color(0xFF2E7D32),
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      if (totalQty > 0) ...[
-                        if (isOpen) const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: readyChipColor.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            '$readyQty/$totalQty listo${totalQty == 1 ? '' : 's'}',
-                            style: TextStyle(
-                              color: readyChipColor,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Text(
-                'Mesa $tableNumber',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A2233),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                totalQty > 0
-                    ? (readyQty >= totalQty
-                          ? 'Todo listo para entregar'
-                          : 'Faltan platos por salir')
-                    : isOpen
-                    ? 'Mesa abierta en servicio'
-                    : 'Toca para abrir',
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  color: Color(0xFF5E6E89),
-                ),
-              ),
-            ],
           ),
         ),
       ),
