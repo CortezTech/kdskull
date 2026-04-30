@@ -15,23 +15,56 @@ class KitchenItemCard extends ConsumerWidget {
     final repo = ref.read(kitchenRepositoryProvider);
     final now = ref.watch(nowTickerProvider).valueOrNull ?? DateTime.now();
 
-    final start = item.startedAt ?? item.createdAt;
-    Duration? elapsed;
-    if (start != null) {
-      if (item.status == KitchenStatus.ready && item.readyAt != null) {
-        elapsed = item.readyAt!.difference(start);
-      } else {
-        elapsed = now.difference(start);
-      }
-    }
-
     final std = Duration(
       seconds: item.stdPrepTimeSec <= 0 ? 1 : item.stdPrepTimeSec,
     );
-    final slaText = elapsed == null
-        ? '-'
-        : '${elapsed.inMinutes}m ${elapsed.inSeconds % 60}s / ${std.inMinutes}m';
-    final late = elapsed != null && elapsed > std;
+
+    Duration safeDiff(DateTime end, DateTime start) {
+      final diff = end.difference(start);
+      return diff.isNegative ? Duration.zero : diff;
+    }
+
+    Duration withEntryOffset(Duration value) {
+      // Compensa el retardo habitual de sincronización al entrar en columna
+      // para que el contador arranque visualmente en 0s.
+      const offset = Duration(seconds: 2);
+      if (value <= offset) return Duration.zero;
+      return value - offset;
+    }
+
+    String fmt(Duration d) => '${d.inMinutes}m ${d.inSeconds % 60}s';
+
+    final createdAt = item.createdAt;
+    final startedAt = item.startedAt;
+    final readyAt = item.readyAt;
+
+    Duration pendingElapsed = Duration.zero;
+    Duration prepElapsed = Duration.zero;
+
+    if (item.status == KitchenStatus.todo) {
+      if (createdAt != null) pendingElapsed = safeDiff(now, createdAt);
+    } else if (item.status == KitchenStatus.inProgress) {
+      if (createdAt != null && startedAt != null) {
+        pendingElapsed = safeDiff(startedAt, createdAt);
+      }
+      if (startedAt != null) {
+        prepElapsed = safeDiff(now, startedAt);
+      }
+    } else if (item.status == KitchenStatus.ready) {
+      if (createdAt != null && startedAt != null) {
+        pendingElapsed = safeDiff(startedAt, createdAt);
+      }
+      if (startedAt != null && readyAt != null) {
+        prepElapsed = safeDiff(readyAt, startedAt);
+      } else if (startedAt != null) {
+        prepElapsed = safeDiff(now, startedAt);
+      }
+    }
+
+    final late = prepElapsed > std;
+    final pendingUi = withEntryOffset(pendingElapsed);
+    final prepUi = withEntryOffset(prepElapsed);
+    final prepWithStdTextUi = '${fmt(prepUi)} / ${std.inMinutes}m';
 
     String? next;
     String? label;
@@ -122,13 +155,25 @@ class KitchenItemCard extends ConsumerWidget {
             ],
             const SizedBox(height: 10),
             if (item.status == KitchenStatus.ready)
-              Text(
-                'Completado en $slaText',
-                style: const TextStyle(color: Color(0xFF2E7D32)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tiempo en espera: ${fmt(pendingElapsed)}',
+                    style: const TextStyle(color: Color(0xFF2E7D32)),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Tiempo de elaboración: ${fmt(prepElapsed)}',
+                    style: const TextStyle(color: Color(0xFF2E7D32)),
+                  ),
+                ],
               )
             else
               Text(
-                'Tiempo: $slaText',
+                item.status == KitchenStatus.todo
+                    ? 'Pendiente: ${fmt(pendingUi)}'
+                    : 'En marcha: $prepWithStdTextUi',
                 style: TextStyle(
                   color: late
                       ? const Color(0xFFB3261E)
@@ -169,3 +214,4 @@ class KitchenItemCard extends ConsumerWidget {
     );
   }
 }
+
