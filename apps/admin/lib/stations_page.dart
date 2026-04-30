@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kds_shared/kds_shared.dart';
 
 import 'providers.dart';
+import 'widgets/confirm_delete_dialog.dart';
+import 'widgets/station_form_dialog.dart';
 
 class StationsPage extends ConsumerWidget {
   const StationsPage({super.key});
@@ -14,9 +16,9 @@ class StationsPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Estaciones')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openStationDialog(context, ref),
+        onPressed: () => _handleUpsert(context, ref),
         icon: const Icon(Icons.add),
-        label: const Text('Añadir'),
+        label: const Text('A\u00F1adir'),
       ),
       body: stationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -28,117 +30,74 @@ class StationsPage extends ConsumerWidget {
           return ListView.separated(
             itemCount: stations.length,
             separatorBuilder: (_, _) => const Divider(height: 0),
-            itemBuilder: (context, i) {
-              final s = stations[i];
-              return ListTile(
-                title: Text(s.name),
-                subtitle: Text('Orden: ${s.order}'),
-                trailing: Wrap(
-                  spacing: 8,
-                  children: [
-                    IconButton(
-                      tooltip: 'Editar',
-                      icon: const Icon(Icons.edit),
-                      onPressed: () =>
-                          _openStationDialog(context, ref, station: s),
-                    ),
-                    IconButton(
-                      tooltip: 'Borrar',
-                      icon: const Icon(Icons.delete),
-                      onPressed: () async {
-                        final ok = await _confirmDelete(context, s.name);
-                        if (!ok) return;
-                        await ref
-                            .read(stationsRepositoryProvider)
-                            .deleteStation(s.id);
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
+            itemBuilder: (context, i) => _StationTile(
+              station: stations[i],
+              onEdit: (station) =>
+                  _handleUpsert(context, ref, station: station),
+            ),
           );
         },
       ),
     );
   }
 
-  Future<bool> _confirmDelete(BuildContext context, String name) async {
-    return (await showDialog<bool>(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Borrar estación'),
-            content: Text('¿Seguro que quieres borrar "$name"?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Borrar'),
-              ),
-            ],
-          ),
-        )) ??
-        false;
-  }
-
-  Future<void> _openStationDialog(
+  Future<void> _handleUpsert(
     BuildContext context,
     WidgetRef ref, {
     Station? station,
   }) async {
-    final nameCtrl = TextEditingController(text: station?.name ?? '');
-    final orderCtrl = TextEditingController(
-      text: (station?.order ?? 0).toString(),
-    );
-
-    await showDialog<void>(
+    final values = await showStationFormDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(station == null ? 'Añadir estación' : 'Editar estación'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Nombre'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: orderCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Orden'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+      initialStation: station,
+    );
+    if (values == null) return;
+
+    final repo = ref.read(stationsRepositoryProvider);
+    if (station == null) {
+      await repo.createStation(name: values.name, order: values.order);
+    } else {
+      await repo.updateStation(
+        id: station.id,
+        name: values.name,
+        order: values.order,
+      );
+    }
+  }
+}
+
+class _StationTile extends ConsumerWidget {
+  const _StationTile({required this.station, required this.onEdit});
+
+  final Station station;
+  final Future<void> Function(Station station) onEdit;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ListTile(
+      title: Text(station.name),
+      subtitle: Text('Orden: ${station.order}'),
+      trailing: Wrap(
+        spacing: 8,
+        children: [
+          IconButton(
+            tooltip: 'Editar',
+            icon: const Icon(Icons.edit),
+            onPressed: () => onEdit(station),
           ),
-          FilledButton(
+          IconButton(
+            tooltip: 'Borrar',
+            icon: const Icon(Icons.delete),
             onPressed: () async {
-              final name = nameCtrl.text.trim();
-              final order = int.tryParse(orderCtrl.text.trim()) ?? 0;
-
-              if (name.isEmpty) return;
-
-              final repo = ref.read(stationsRepositoryProvider);
-              if (station == null) {
-                await repo.createStation(name: name, order: order);
-              } else {
-                await repo.updateStation(
-                  id: station.id,
-                  name: name,
-                  order: order,
-                );
-              }
-
-              if (context.mounted) Navigator.pop(context);
+              final ok = await showConfirmDeleteDialog(
+                context: context,
+                title: 'Borrar estaci\u00F3n',
+                message: '\u00BFSeguro que quieres borrar "${station.name}"?',
+              );
+              if (!ok) return;
+              await ref
+                  .read(stationsRepositoryProvider)
+                  .deleteStation(station.id);
             },
-            child: const Text('Guardar'),
           ),
         ],
       ),

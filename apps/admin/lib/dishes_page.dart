@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kds_shared/kds_shared.dart';
 
 import 'providers.dart';
+import 'widgets/confirm_delete_dialog.dart';
+import 'widgets/dish_form_dialog.dart';
 
 class DishesPage extends ConsumerWidget {
   const DishesPage({super.key});
@@ -18,15 +20,19 @@ class DishesPage extends ConsumerWidget {
         onPressed: () async {
           final stations = stationsAsync.value ?? const <Station>[];
           if (stations.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Crea una estación primero.')),
-            );
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Crea una estaci\u00F3n primero.'),
+                ),
+              );
+            }
             return;
           }
-          await _openDishDialog(context, ref, stations: stations);
+          await _handleUpsert(context, ref, stations: stations);
         },
         icon: const Icon(Icons.add),
-        label: const Text('Añadir'),
+        label: const Text('A\u00F1adir'),
       ),
       body: stationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -48,137 +54,17 @@ class DishesPage extends ConsumerWidget {
                 return const Center(child: Text('No hay platos'));
               }
 
-              final dishesByCategory = <String, List<Dish>>{};
-              for (final dish in dishes) {
-                final category = dish.category.trim().isEmpty
-                    ? 'Sin categoria'
-                    : dish.category.trim();
-                dishesByCategory.putIfAbsent(category, () => <Dish>[]).add(dish);
-              }
-
-              final categories = dishesByCategory.keys.toList()
-                ..sort((a, b) {
-                  final ia = kDefaultDishCategories.indexOf(a);
-                  final ib = kDefaultDishCategories.indexOf(b);
-                  if (ia != -1 && ib != -1) return ia.compareTo(ib);
-                  if (ia != -1) return -1;
-                  if (ib != -1) return 1;
-                  return a.compareTo(b);
-                });
-
-              for (final category in categories) {
-                final grouped = dishesByCategory[category]!;
-                grouped.sort((a, b) {
-                  final sa = stationNameById[a.stationId] ?? '';
-                  final sb = stationNameById[b.stationId] ?? '';
-                  final byStation = sa.compareTo(sb);
-                  if (byStation != 0) return byStation;
-                  return a.name.compareTo(b.name);
-                });
-              }
-
+              final grouped = _groupAndSortDishes(dishes, stationNameById);
               return ListView.builder(
                 padding: const EdgeInsets.fromLTRB(12, 12, 12, 90),
-                itemCount: categories.length,
-                itemBuilder: (context, categoryIndex) {
-                  final category = categories[categoryIndex];
-                  final categoryDishes = dishesByCategory[category]!;
-
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 8,
-                            ),
-                            child: Text(
-                              '$category (${categoryDishes.length})',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const Divider(height: 1),
-                          for (int i = 0; i < categoryDishes.length; i++) ...[
-                            Builder(
-                              builder: (context) {
-                                final d = categoryDishes[i];
-                                final stationName =
-                                    stationNameById[d.stationId] ??
-                                    '(sin estación)';
-                                final minutes = (d.stdPrepTimeSec / 60).round();
-
-                                return ListTile(
-                                  title: Text(d.name),
-                                  subtitle: Text(
-                                    'Estación: $stationName · Tiempo: $minutes min',
-                                  ),
-                                  leading: Icon(
-                                    d.available
-                                        ? Icons.check_circle
-                                        : Icons.cancel,
-                                  ),
-                                  trailing: Wrap(
-                                    spacing: 8,
-                                    crossAxisAlignment:
-                                        WrapCrossAlignment.center,
-                                    children: [
-                                      Switch(
-                                        value: d.available,
-                                        onChanged: (v) async {
-                                          await ref
-                                              .read(dishesRepositoryProvider)
-                                              .updateDish(
-                                                id: d.id,
-                                                name: d.name,
-                                                stationId: d.stationId,
-                                                stdPrepTimeSec: d.stdPrepTimeSec,
-                                                available: v,
-                                                category: d.category,
-                                              );
-                                        },
-                                      ),
-                                      IconButton(
-                                        tooltip: 'Editar',
-                                        icon: const Icon(Icons.edit),
-                                        onPressed: () => _openDishDialog(
-                                          context,
-                                          ref,
-                                          stations: stations,
-                                          dish: d,
-                                        ),
-                                      ),
-                                      IconButton(
-                                        tooltip: 'Borrar',
-                                        icon: const Icon(Icons.delete),
-                                        onPressed: () async {
-                                          final ok = await _confirmDelete(
-                                            context,
-                                            d.name,
-                                          );
-                                          if (!ok) return;
-                                          await ref
-                                              .read(dishesRepositoryProvider)
-                                              .deleteDish(d.id);
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                            if (i < categoryDishes.length - 1)
-                              const Divider(height: 0),
-                          ],
-                        ],
-                      ),
-                    ),
+                itemCount: grouped.length,
+                itemBuilder: (context, i) {
+                  final entry = grouped.entries.elementAt(i);
+                  return _DishCategoryCard(
+                    category: entry.key,
+                    dishes: entry.value,
+                    stations: stations,
+                    stationNameById: stationNameById,
                   );
                 },
               );
@@ -189,160 +75,204 @@ class DishesPage extends ConsumerWidget {
     );
   }
 
-  Future<bool> _confirmDelete(BuildContext context, String name) async {
-    return (await showDialog<bool>(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Borrar plato'),
-            content: Text('¿Seguro que quieres borrar "$name"?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Borrar'),
-              ),
-            ],
-          ),
-        )) ??
-        false;
-  }
-
-  Future<void> _openDishDialog(
+  Future<void> _handleUpsert(
     BuildContext context,
     WidgetRef ref, {
     required List<Station> stations,
     Dish? dish,
   }) async {
-    final nameCtrl = TextEditingController(text: dish?.name ?? '');
-
-    final initMinutes = dish == null
-        ? 10
-        : (dish.stdPrepTimeSec / 60).round().clamp(1, 999);
-
-    final minutesCtrl = TextEditingController(text: initMinutes.toString());
-
-    var selectedStationId = dish?.stationId.isNotEmpty == true
-        ? dish!.stationId
-        : stations.first.id;
-
-    var selectedCategory = (dish?.category.isNotEmpty == true)
-        ? dish!.category
-        : kDefaultDishCategories.first;
-    final categoryOptions = _categoryOptions(selectedCategory);
-
-    var available = dish?.available ?? true;
-
-    await showDialog<void>(
+    final values = await showDishFormDialog(
       context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(dish == null ? 'Añadir plato' : 'Editar plato'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Nombre'),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedCategory,
-                  items: categoryOptions
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
-                  onChanged: (v) => setState(
-                    () => selectedCategory = v ?? kDefaultDishCategories.first,
-                  ),
-                  decoration: const InputDecoration(labelText: 'Categoría'),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedStationId,
-                  items: stations
-                      .map(
-                        (s) =>
-                            DropdownMenuItem(value: s.id, child: Text(s.name)),
-                      )
-                      .toList(),
-                  onChanged: (v) => setState(
-                    () => selectedStationId = v ?? stations.first.id,
-                  ),
-                  decoration: const InputDecoration(labelText: 'Estación'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: minutesCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Tiempo estándar (minutos)',
-                    helperText: 'Se guarda en segundos en Firestore',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SwitchListTile(
-                  value: available,
-                  onChanged: (v) => setState(() => available = v),
-                  title: const Text('Disponible'),
-                  subtitle: const Text('Si está desactivado, actúa como 86'),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final name = nameCtrl.text.trim();
-                final minutes = int.tryParse(minutesCtrl.text.trim()) ?? 0;
-                final sec = (minutes <= 0 ? 60 : minutes * 60);
+      stations: stations,
+      initialDish: dish,
+    );
+    if (values == null) return;
 
-                if (name.isEmpty) return;
+    final repo = ref.read(dishesRepositoryProvider);
+    if (dish == null) {
+      await repo.createDish(
+        name: values.name,
+        stationId: values.stationId,
+        stdPrepTimeSec: values.stdPrepTimeSec,
+        available: values.available,
+        category: values.category,
+      );
+    } else {
+      await repo.updateDish(
+        id: dish.id,
+        name: values.name,
+        stationId: values.stationId,
+        stdPrepTimeSec: values.stdPrepTimeSec,
+        available: values.available,
+        category: values.category,
+      );
+    }
+  }
+}
 
-                final repo = ref.read(dishesRepositoryProvider);
-                if (dish == null) {
-                  await repo.createDish(
-                    name: name,
-                    stationId: selectedStationId,
-                    stdPrepTimeSec: sec,
-                    available: available,
-                    category: selectedCategory,
-                  );
-                } else {
-                  await repo.updateDish(
-                    id: dish.id,
-                    name: name,
-                    stationId: selectedStationId,
-                    stdPrepTimeSec: sec,
-                    available: available,
-                    category: selectedCategory,
-                  );
-                }
+class _DishCategoryCard extends StatelessWidget {
+  const _DishCategoryCard({
+    required this.category,
+    required this.dishes,
+    required this.stations,
+    required this.stationNameById,
+  });
 
-                if (context.mounted) Navigator.pop(context);
-              },
-              child: const Text('Guardar'),
+  final String category;
+  final List<Dish> dishes;
+  final List<Station> stations;
+  final Map<String, String> stationNameById;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+              child: Text(
+                '$category (${dishes.length})',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
+            const Divider(height: 1),
+            for (int i = 0; i < dishes.length; i++) ...[
+              _DishTile(
+                dish: dishes[i],
+                stations: stations,
+                stationNameById: stationNameById,
+              ),
+              if (i < dishes.length - 1) const Divider(height: 0),
+            ],
           ],
         ),
       ),
     );
   }
+}
 
-  List<String> _categoryOptions(String selectedCategory) {
-    final normalizedSelected = selectedCategory.trim();
-    final options = <String>[
-      ...kDefaultDishCategories,
-      if (normalizedSelected.isNotEmpty &&
-          !kDefaultDishCategories.contains(normalizedSelected))
-        normalizedSelected,
-    ];
-    return options;
+class _DishTile extends ConsumerWidget {
+  const _DishTile({
+    required this.dish,
+    required this.stations,
+    required this.stationNameById,
+  });
+
+  final Dish dish;
+  final List<Station> stations;
+  final Map<String, String> stationNameById;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stationName =
+        stationNameById[dish.stationId] ?? '(sin estaci\u00F3n)';
+    final minutes = (dish.stdPrepTimeSec / 60).round();
+
+    return ListTile(
+      title: Text(dish.name),
+      subtitle: Text('Estaci\u00F3n: $stationName \u00B7 Tiempo: $minutes min'),
+      leading: Icon(dish.available ? Icons.check_circle : Icons.cancel),
+      trailing: Wrap(
+        spacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Switch(
+            value: dish.available,
+            onChanged: (v) async {
+              await ref
+                  .read(dishesRepositoryProvider)
+                  .updateDish(
+                    id: dish.id,
+                    name: dish.name,
+                    stationId: dish.stationId,
+                    stdPrepTimeSec: dish.stdPrepTimeSec,
+                    available: v,
+                    category: dish.category,
+                  );
+            },
+          ),
+          IconButton(
+            tooltip: 'Editar',
+            icon: const Icon(Icons.edit),
+            onPressed: () async {
+              final values = await showDishFormDialog(
+                context: context,
+                stations: stations,
+                initialDish: dish,
+              );
+              if (values == null) return;
+              await ref
+                  .read(dishesRepositoryProvider)
+                  .updateDish(
+                    id: dish.id,
+                    name: values.name,
+                    stationId: values.stationId,
+                    stdPrepTimeSec: values.stdPrepTimeSec,
+                    available: values.available,
+                    category: values.category,
+                  );
+            },
+          ),
+          IconButton(
+            tooltip: 'Borrar',
+            icon: const Icon(Icons.delete),
+            onPressed: () async {
+              final ok = await showConfirmDeleteDialog(
+                context: context,
+                title: 'Borrar plato',
+                message: '\u00BFSeguro que quieres borrar "${dish.name}"?',
+              );
+              if (!ok) return;
+              await ref.read(dishesRepositoryProvider).deleteDish(dish.id);
+            },
+          ),
+        ],
+      ),
+    );
   }
+}
+
+Map<String, List<Dish>> _groupAndSortDishes(
+  List<Dish> dishes,
+  Map<String, String> stationNameById,
+) {
+  final dishesByCategory = <String, List<Dish>>{};
+  for (final dish in dishes) {
+    final category = dish.category.trim().isEmpty
+        ? 'Sin categor\u00EDa'
+        : dish.category.trim();
+    dishesByCategory.putIfAbsent(category, () => <Dish>[]).add(dish);
+  }
+
+  final categories = dishesByCategory.keys.toList()
+    ..sort((a, b) {
+      final ia = kDefaultDishCategories.indexOf(a);
+      final ib = kDefaultDishCategories.indexOf(b);
+      if (ia != -1 && ib != -1) return ia.compareTo(ib);
+      if (ia != -1) return -1;
+      if (ib != -1) return 1;
+      return a.compareTo(b);
+    });
+
+  for (final category in categories) {
+    final grouped = dishesByCategory[category]!;
+    grouped.sort((a, b) {
+      final sa = stationNameById[a.stationId] ?? '';
+      final sb = stationNameById[b.stationId] ?? '';
+      final byStation = sa.compareTo(sb);
+      if (byStation != 0) return byStation;
+      return a.name.compareTo(b.name);
+    });
+  }
+
+  return {
+    for (final category in categories) category: dishesByCategory[category]!,
+  };
 }
