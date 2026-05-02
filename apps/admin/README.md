@@ -1,17 +1,36 @@
-# kds_admin
+# KDS Admin
 
-A new Flutter project.
+Aplicacion de administracion del sistema KDS.
 
-## Getting Started
+## Funcionalidad
 
-This project is a starting point for a Flutter application.
+- Gestion de platos.
+- Gestion de estaciones.
+- Mantenimiento de datos de negocio en Firestore.
 
-A few resources to get you started if this is your first Flutter project:
+## Requisitos
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- Flutter instalado y configurado.
+- Proyecto Firebase `kds-tfg` accesible.
+- Archivo de configuracion Firebase generado en `lib/firebase_options.dart`.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Ejecutar en desarrollo
+
+Desde la raiz del repositorio:
+
+```bash
+flutter run -d chrome -t apps/admin/lib/main.dart
+```
+
+O entrando en esta app:
+
+```bash
+cd apps/admin
+flutter run
+```
+
+## Firebase
+
+- Configuracion FlutterFire de esta app: `apps/admin/firebase.json`
+- Opciones de Firebase en codigo: `apps/admin/lib/firebase_options.dart`
+- Reglas e indices Firestore del proyecto (compartidos): `database/`
