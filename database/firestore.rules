@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Base segura: solo usuarios autenticados.
+    // Ajusta reglas por coleccion segun tu modelo.
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
