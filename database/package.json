@@ -1,0 +1,13 @@
+{
+  "name": "database-seed",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Script de inicializacion (seed) para Firestore - coleccion platos",
+  "main": "seed_firestore.js",
+  "scripts": {
+    "seed": "node seed_firestore.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}
