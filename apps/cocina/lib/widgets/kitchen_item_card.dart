@@ -27,7 +27,7 @@ class KitchenItemCard extends ConsumerWidget {
     Duration withEntryOffset(Duration value) {
       // Compensa el retardo habitual de sincronización al entrar en columna
       // para que el contador arranque visualmente en 0s.
-      const offset = Duration(seconds: 2);
+      const offset = Duration(seconds: 9);
       if (value <= offset) return Duration.zero;
       return value - offset;
     }
